@@ -205,6 +205,8 @@ int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 	}
 	// 길이 결정
 	out.len = i + j;
+	if (out.dat[i + j - 1] == 0)
+		out.len -= 1;
 	
 	ECC_bn_cpy(c, &out);
 
