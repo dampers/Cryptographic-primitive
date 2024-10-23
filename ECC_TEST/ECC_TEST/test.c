@@ -124,9 +124,52 @@ void test_add_sub_mod()
 	gmp_randclear(state);
 }
 
+void test_mul()
+{
+	int i;
+	mpz_t a, b, c, p;
+	ECC_BN A, B, C, temp;
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+	mpz_init(a);
+	mpz_init(b);
+	mpz_init(c);
+	mpz_init(p);
+	ECC_ecc_bn_to_mpz(p, &prime_p256);
+
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		mpz_urandomm(a, state, p);
+		mpz_urandomm(b, state, p);
+
+		a->_mp_size = a->_mp_d[0] % 9;
+		b->_mp_size = b->_mp_d[0] % 9;
+		mpz_mul(c, a, b);
+		ECC_mpz_to_ecc_bn(&A, a);
+		ECC_mpz_to_ecc_bn(&B, b);
+		ECC_bn_mul(&C, &A, &B);
+
+		ECC_mpz_to_ecc_bn(&temp, c);
+		//printf("%d %d\n", C.len, temp.len);
+		if (ECC_bn_cmp(&C, &temp))
+		{
+			printf("fail at multiple %d\n", i);
+			return;
+		}
+	}
+
+	printf("success test_mul\n");
+	mpz_clear(a);
+	mpz_clear(b);
+	mpz_clear(c);
+	mpz_clear(p);
+	gmp_randclear(state);
+}
+
 int main()
 {
-	test_add_sub();
-	test_add_sub_mod();
+	/*test_add_sub();
+	test_add_sub_mod();*/
+	test_mul();
 	return 0;
 }

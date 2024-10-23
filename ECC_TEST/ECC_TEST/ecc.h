@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #define __GMP_ENABLE
 
@@ -14,8 +15,8 @@
 
 typedef struct _ECC_BN
 {
-	unsigned int dat[ECC_P256_WORD_NUM];
-	unsigned int len;
+	uint32_t dat[ECC_P256_WORD_NUM];
+	uint32_t len;
 }ECC_BN;
 
 
@@ -37,6 +38,7 @@ int ECC_bn_cmp(ECC_BN* a, ECC_BN* b);
 // 
 int ECC_bn_add(ECC_BN* c, ECC_BN* a, ECC_BN* b);
 int ECC_bn_sub(ECC_BN* c, ECC_BN* a, ECC_BN* b);
+int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b);
 
 int ECC_bn_add_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p);
 int ECC_bn_sub_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p);

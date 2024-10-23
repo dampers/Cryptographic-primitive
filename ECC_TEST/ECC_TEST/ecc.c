@@ -177,3 +177,36 @@ int ECC_bn_sub_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
 	}
 	return ECC_PASS;
 }
+
+// c = a * b (a, b in GF(p))
+int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b)
+{
+	int i, j;
+	ECC_BN out;
+	uint64_t carry = 0;
+
+	if ((a->len == 0) || (b->len == 0))
+	{
+		c->len = 0;
+		return ECC_PASS;
+	}
+
+	for (i = 0; i < ECC_P256_WORD_NUM; i++) out.dat[i] = 0;
+	for (i = 0; i < b->len; i++)
+	{
+		carry = 0;
+		for (j = 0; j < a->len; j++)
+		{
+			carry = (uint64_t)a->dat[j] * b->dat[i] + (uint64_t)out.dat[i + j] + carry;
+			out.dat[i + j] = (uint32_t)carry;
+			carry = carry >> 32;
+		}
+		out.dat[i + j] = (uint32_t)carry;
+	}
+	// 길이 결정
+	out.len = i + j;
+	
+	ECC_bn_cpy(c, &out);
+
+	return ECC_PASS;
+}
