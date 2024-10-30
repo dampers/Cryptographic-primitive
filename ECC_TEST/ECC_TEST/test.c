@@ -166,10 +166,60 @@ void test_mul()
 	gmp_randclear(state);
 }
 
+void test_mod_p256()
+{
+	int i;
+	//int j;
+	mpz_t a, b, c, p;
+	ECC_BN A, B, C, temp;
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+	mpz_init(a);
+	mpz_init(b);
+	mpz_init(c);
+	mpz_init(p);
+	ECC_ecc_bn_to_mpz(p, &prime_p256);
+
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		mpz_urandomm(a, state, p);
+		mpz_urandomm(b, state, p);
+
+		mpz_mul(c, a, b);
+		mpz_mod(c, c, p);
+		ECC_mpz_to_ecc_bn(&A, a);
+		ECC_mpz_to_ecc_bn(&B, b);
+		ECC_bn_mul(&C, &A, &B);
+		ECC_bn_mod_p256(&C, &C);
+		ECC_mpz_to_ecc_bn(&temp, c);
+		//printf("%d %d\n", C.len, temp.len);
+		//for (j = 0; j < C.len; j++)
+		//	printf("%u ", C.dat[j]);
+		//printf("\n");
+
+		//for (j = 0; j < C.len; j++)
+		//	printf("%u ", temp.dat[j]);
+		//printf("\n");
+		if (ECC_bn_cmp(&C, &temp))
+		{
+			printf("fail at mod %d\n", i);
+			return;
+		}
+	}
+
+	printf("success test mod \n");
+	mpz_clear(a);
+	mpz_clear(b);
+	mpz_clear(c);
+	mpz_clear(p);
+	gmp_randclear(state);
+}
+
 int main()
 {
 	/*test_add_sub();
 	test_add_sub_mod();*/
-	test_mul();
+	//test_mul();
+	test_mod_p256();
 	return 0;
 }

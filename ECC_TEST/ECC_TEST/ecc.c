@@ -178,6 +178,135 @@ int ECC_bn_sub_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
 	return ECC_PASS;
 }
 
+
+int ECC_bn_mod_p256(ECC_BN* c, ECC_BN* a)
+{
+	int i;
+	ECC_BN in, out, tmp1, tmp2;
+
+	for (i = 0; i < a->len; i++)
+		in.dat[i] = a->dat[i];
+
+	for (; i < ECC_P256_WORD_NUM; i++)
+		in.dat[i] = 0;
+	
+	// tmp1 = s2 = (c15, c14, c13, c12, c11,0,0,0)
+	// tmp2 = s3 = (0,   c15, c14, c13, c12,0,0,0)
+
+	tmp1.dat[0] = tmp1.dat[1] = tmp1.dat[2] = tmp2.dat[0] = tmp2.dat[1] = tmp2.dat[2] = tmp2.dat[7] = 0;
+	tmp1.dat[3] = in.dat[11];
+	tmp1.dat[4] = tmp2.dat[3] = in.dat[12];
+	tmp1.dat[5] = tmp2.dat[4] = in.dat[13];
+	tmp1.dat[6] = tmp2.dat[5] = in.dat[14];
+	tmp1.dat[7] = tmp2.dat[6] = in.dat[15];
+	tmp1.len = 8;
+	tmp2.len = 7;
+
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+	while ((tmp2.len > 0) && (tmp2.dat[tmp2.len - 1] == 0)) tmp2.len--;
+
+
+	ECC_bn_add_mod(&out, &tmp1, &tmp2, &prime_p256);
+	ECC_bn_add_mod(&out, &out, &out, &prime_p256);
+
+	// s1
+	tmp1.dat[7] = in.dat[7];
+	tmp1.dat[6] = in.dat[6];
+	tmp1.dat[5] = in.dat[5];
+	tmp1.dat[4] = in.dat[4];
+	tmp1.dat[3] = in.dat[3];
+	tmp1.dat[2] = in.dat[2];
+	tmp1.dat[1] = in.dat[1];
+	tmp1.dat[0] = in.dat[0];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+
+	ECC_bn_add_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s4
+	tmp1.dat[7] = in.dat[15];
+	tmp1.dat[6] = in.dat[14];
+	tmp1.dat[5] = 0;
+	tmp1.dat[4] = 0;
+	tmp1.dat[3] = 0;
+	tmp1.dat[2] = in.dat[10];
+	tmp1.dat[1] = in.dat[9];
+	tmp1.dat[0] = in.dat[8];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+
+	ECC_bn_add_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s5
+	tmp1.dat[7] = in.dat[ 8];
+	tmp1.dat[6] = in.dat[13];
+	tmp1.dat[5] = in.dat[15];
+	tmp1.dat[4] = in.dat[14];
+	tmp1.dat[3] = in.dat[13];
+	tmp1.dat[2] = in.dat[11];
+	tmp1.dat[1] = in.dat[10];
+	tmp1.dat[0] = in.dat[ 9];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+
+	ECC_bn_add_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s6
+	tmp1.dat[7] = in.dat[10];
+	tmp1.dat[6] = in.dat[ 8];
+	tmp1.dat[5] = 0;
+	tmp1.dat[4] = 0;
+	tmp1.dat[3] = 0;
+	tmp1.dat[2] = in.dat[13];
+	tmp1.dat[1] = in.dat[12];
+	tmp1.dat[0] = in.dat[11];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+	ECC_bn_sub_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s7
+	tmp1.dat[7] = in.dat[11];
+	tmp1.dat[6] = in.dat[ 9];
+	tmp1.dat[5] = 0;
+	tmp1.dat[4] = 0;
+	tmp1.dat[3] = in.dat[15];
+	tmp1.dat[2] = in.dat[14];
+	tmp1.dat[1] = in.dat[13];
+	tmp1.dat[0] = in.dat[12];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+	ECC_bn_sub_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s8
+	tmp1.dat[7] = in.dat[12];
+	tmp1.dat[6] = 0;
+	tmp1.dat[5] = in.dat[10];
+	tmp1.dat[4] = in.dat[9];
+	tmp1.dat[3] = in.dat[8];
+	tmp1.dat[2] = in.dat[15];
+	tmp1.dat[1] = in.dat[14];
+	tmp1.dat[0] = in.dat[13];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+	ECC_bn_sub_mod(&out, &out, &tmp1, &prime_p256);
+
+	// s9
+	tmp1.dat[7] = in.dat[13];
+	tmp1.dat[6] = 0;
+	tmp1.dat[5] = in.dat[11];
+	tmp1.dat[4] = in.dat[10];
+	tmp1.dat[3] = in.dat[9];
+	tmp1.dat[2] = 0;
+	tmp1.dat[1] = in.dat[15];
+	tmp1.dat[0] = in.dat[14];
+	tmp1.len = 8;
+	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
+	ECC_bn_sub_mod(c, &out, &tmp1, &prime_p256);
+
+
+	return ECC_PASS;
+}
+
 // c = a * b (a, b in GF(p))
 int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 {
