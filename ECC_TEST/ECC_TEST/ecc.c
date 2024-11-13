@@ -13,7 +13,6 @@ int ECC_ecc_bn_to_mpz(mpz_t c, ECC_BN* a)
 	for (i = 0; i < a->len; i++) {
 		c->_mp_d[i] = a->dat[i];
 	}
-
 	c->_mp_size = a->len;
 
 	return ECC_PASS;
@@ -338,6 +337,90 @@ int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 		out.len -= 1;
 	
 	ECC_bn_cpy(c, &out);
+
+	return ECC_PASS;
+}
+
+int ECC_bn_1bit_rshift(ECC_BN* c, ECC_BN* a)
+{
+	int i;
+
+	if (a->len == 0)
+	{
+		c->len = 0;
+		return ECC_PASS;
+	}
+
+	for (i = 0; i < (a->len - 1); i++)
+	{
+		c->dat[i] = (a->dat[i + 1] << 31) | (a->dat[i] >> 1);
+	}
+	c->dat[i] = a->dat[i] >> 1;
+
+	if (c->dat[i])
+		c->len = a->len;
+	else
+		c->len = a->len - 1;
+
+	return ECC_PASS;
+}
+
+// c = a^{-1} mod p
+int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
+{
+	ECC_BN u, v, x1, x2;
+
+	if (a->len == 0)
+	{
+		return ECC_FAIL;
+	}
+
+	ECC_bn_cpy(&u, a);
+	ECC_bn_cpy(&v, &prime_p256);
+	x1.dat[0] = 1;
+	x1.len = 1;
+	x2.len = 0;
+	while ((u.dat[0] != 1 || u.len != 1) && (v.dat[0] != 1 || v.len != 1))
+	{
+		while ((u.dat[0] & 1) == 0)
+		{
+			ECC_bn_1bit_rshift(&u, &u);
+			if ((x1.dat[0] & 1))
+			{
+				ECC_bn_add(&x1, &prime_p256, &x1);
+			}
+			ECC_bn_1bit_rshift(&x1, &x1);
+		}
+
+		while ((v.dat[0] & 1) == 0)
+		{
+			ECC_bn_1bit_rshift(&v, &v);
+			if ((x2.dat[0] & 1))
+			{
+				ECC_bn_add(&x2, &prime_p256, &x2);
+			}
+			ECC_bn_1bit_rshift(&x2, &x2);
+		}
+
+		if (ECC_bn_cmp(&u, &v) >= 0)
+		{
+			ECC_bn_sub(&u, &u, &v);
+			ECC_bn_sub_mod(&x1, &x1, &x2, &prime_p256);
+		}
+		else
+		{
+			ECC_bn_sub(&v, &v, &u);
+			ECC_bn_sub_mod(&x2, &x2, &x1, &prime_p256);
+		}
+	}
+	if (u.dat[0] == 1 && u.len == 1)
+	{
+		ECC_bn_cpy(c, &x1);
+	}
+	else
+	{
+		ECC_bn_cpy(c, &x2);
+	}
 
 	return ECC_PASS;
 }

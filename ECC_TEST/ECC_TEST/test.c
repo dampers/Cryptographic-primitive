@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
 #include "ecc.h"
 #include "gmp.h"
 
@@ -215,11 +217,129 @@ void test_mod_p256()
 	gmp_randclear(state);
 }
 
+
+void validtest_binary_inv()
+{
+	int i;
+	int j;
+	mpz_t a, b, p;
+	ECC_BN A, B, temp;
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+	mpz_init(a);
+	mpz_init(b);
+	mpz_init(p);
+	ECC_ecc_bn_to_mpz(p, &prime_p256);
+
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		mpz_urandomm(a, state, p);
+		mpz_invert(b, a, p);
+		ECC_mpz_to_ecc_bn(&A, a);
+		ECC_bn_binary_inv(&B, &A);
+		ECC_mpz_to_ecc_bn(&temp, b);
+
+		if (ECC_bn_cmp(&B, &temp))
+		{
+			printf("fail inversion at %d\n", i);
+			return;
+		}
+	}
+
+	printf("success inversion \n");
+	mpz_clear(a);
+	mpz_clear(b);
+	mpz_clear(p);
+	gmp_randclear(state);
+}
+
+ static void performance_test()
+{
+	/*
+	* performance test of 
+	* ECC_bn_add_mod
+	* ECC_bn_sub_mod
+	* ECC_bn_mul
+	* ECC_bn_mod_p256
+	* ECC_bn_binary_inv
+	*/
+
+	clock_t start, end;
+	int i;
+	ECC_BN A, B, C;
+	mpz_t a, b, p;
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+
+	mpz_init(a);
+	mpz_init(b);
+	mpz_init(p);
+
+	ECC_ecc_bn_to_mpz(p, &prime_p256);
+	mpz_urandomm(a, state, p);
+	mpz_urandomm(b, state, p);
+	ECC_mpz_to_ecc_bn(&A, a);
+	ECC_mpz_to_ecc_bn(&B, b);
+
+	// ECC_bn_add_mod
+	start = clock();
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		ECC_bn_add_mod(&C, &A, &B, &prime_p256);
+	}
+	end = clock();
+	printf("ECC bn add mod time  : %lf\n", ((double)end - start));
+	
+	// ECC_bn_sub_mod
+	start = clock();
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		ECC_bn_sub_mod(&C, &A, &B, &prime_p256);
+	}
+	end = clock();
+	printf("ECC bn sub mod time  : %lf\n", ((double)end - start));
+
+	// ECC_bn_add_mul
+	start = clock();
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		ECC_bn_mul(&C, &A, &B);
+	}
+	end = clock();
+	printf("ECC bn mul time : %lf\n", ((double)end - start));
+
+	// ECC_bn_mod p256
+	start = clock();
+	ECC_bn_mul(&A, &A, &B);
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		ECC_bn_mod_p256(&C, &A);
+	}
+	end = clock();
+	printf("ECC bn mod p256 time : %lf\n", ((double)end - start));
+
+	// ECC_bn_binary inversion
+	start = clock();
+	for (i = 0; i < TEST_SIZE; i++)
+	{
+		ECC_bn_binary_inv(&C, &B);
+	}
+	end = clock();
+	printf("ECC bn binary inversion time : %lf\n", ((double)end - start));
+	
+	mpz_clear(a);
+	mpz_clear(b);
+	mpz_clear(p);
+	gmp_randclear(state);
+}
+
 int main()
 {
 	/*test_add_sub();
 	test_add_sub_mod();*/
 	//test_mul();
-	test_mod_p256();
+	//test_mod_p256();
+	validtest_binary_inv();
+	performance_test();
 	return 0;
 }
