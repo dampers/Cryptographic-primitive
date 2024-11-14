@@ -6,11 +6,13 @@ int ECC_ecc_bn_to_mpz(mpz_t c, ECC_BN* a)
 {
 	int i;
 
-	if (c->_mp_alloc < a->len) {
+	if (c->_mp_alloc < a->len)
+	{
 		mpz_realloc2(c, a->len << 5);
 	}
 
-	for (i = 0; i < a->len; i++) {
+	for (i = 0; i < a->len; i++)
+	{
 		c->_mp_d[i] = a->dat[i];
 	}
 	c->_mp_size = a->len;
@@ -28,7 +30,8 @@ int ECC_mpz_to_ecc_bn(ECC_BN* c, mpz_t a)
 	if (a->_mp_size > ECC_P256_WORD_NUM)
 		return ECC_FAIL;
 
-	for (i = 0; i < a->_mp_size; i++) {
+	for (i = 0; i < a->_mp_size; i++)
+	{
 		c->dat[i] = a->_mp_d[i];
 	}
 
@@ -42,7 +45,8 @@ int ECC_bn_cpy(ECC_BN* c, ECC_BN* a)
 {
 	int i;
 
-	for (i = 0; i < a->len; i++) {
+	for (i = 0; i < a->len; i++)
+	{
 		c->dat[i] = a->dat[i];
 	}
 
@@ -62,12 +66,16 @@ int ECC_bn_cmp(ECC_BN* a, ECC_BN* b)
 	if (a->len < b->len)
 		return -1;
 
-	for (i = a->len - 1; i >= 0; i--) {
-		if (a->dat[i] > b->dat[i]) {
+	for (i = a->len - 1; i >= 0; i--)
+	{
+		if (a->dat[i] > b->dat[i])
+		{
 			return 1;
 		}
-		else {
-			if (a->dat[i] < b->dat[i]) {
+		else
+		{
+			if (a->dat[i] < b->dat[i])
+			{
 				return -1;
 			}
 		}
@@ -83,7 +91,8 @@ int ECC_bn_add(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 	int i, carry = 0;
 	ECC_BN out;
 
-	for (i = 0; i < b->len; i++) {
+	for (i = 0; i < b->len; i++)
+	{
 		out.dat[i] = a->dat[i] + b->dat[i] + carry;
 		if (carry)
 			carry = a->dat[i] >= (~b->dat[i]);
@@ -91,7 +100,8 @@ int ECC_bn_add(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 			carry = a->dat[i] > (~b->dat[i]);
 	}
 
-	for (; i < a->len; i++) {
+	for (; i < a->len; i++)
+	{
 		out.dat[i] = a->dat[i] + carry;
 		carry = out.dat[i] < carry;
 	}
@@ -113,7 +123,8 @@ int ECC_bn_sub(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 {
 	int i, borrow = 0;
 	ECC_BN out;
-	for (i = 0; i < b->len; i++) {
+	for (i = 0; i < b->len; i++)
+	{
 		out.dat[i] = a->dat[i] - b->dat[i] - borrow;
 		if (borrow)
 			borrow = a->dat[i] <= b->dat[i];
@@ -121,7 +132,8 @@ int ECC_bn_sub(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 			borrow = a->dat[i] < b->dat[i];
 	}
 
-	for (; i < a->len; i++) {
+	for (; i < a->len; i++)
+	{
 		out.dat[i] = a->dat[i] - borrow;
 		borrow = a->dat[i] < borrow;
 	}

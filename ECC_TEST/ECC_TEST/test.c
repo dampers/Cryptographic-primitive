@@ -335,6 +335,7 @@ void validtest_binary_inv()
 
 int main()
 {
+	test_add_sub();
 	/*test_add_sub();
 	test_add_sub_mod();*/
 	//test_mul();
