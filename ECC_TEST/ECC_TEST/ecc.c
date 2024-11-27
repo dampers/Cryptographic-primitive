@@ -1,4 +1,4 @@
-#include "ecc.h"
+ï»¿#include "ecc.h"
 
 
 #ifdef __GMP_ENABLE
@@ -177,7 +177,7 @@ int ECC_bn_sub_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
 	if ((a->len < 0) || (b->len < 0))
 		return ECC_FAIL;
 
-	if(ECC_bn_cmp(a, b) >= 0)
+	if (ECC_bn_cmp(a, b) >= 0)
 	{
 		ECC_bn_sub(c, a, b);
 	}
@@ -200,7 +200,7 @@ int ECC_bn_mod_p256(ECC_BN* c, ECC_BN* a)
 
 	for (; i < ECC_P256_WORD_NUM; i++)
 		in.dat[i] = 0;
-	
+
 	// tmp1 = s2 = (c15, c14, c13, c12, c11,0,0,0)
 	// tmp2 = s3 = (0,   c15, c14, c13, c12,0,0,0)
 
@@ -249,14 +249,14 @@ int ECC_bn_mod_p256(ECC_BN* c, ECC_BN* a)
 	ECC_bn_add_mod(&out, &out, &tmp1, &prime_p256);
 
 	// s5
-	tmp1.dat[7] = in.dat[ 8];
+	tmp1.dat[7] = in.dat[8];
 	tmp1.dat[6] = in.dat[13];
 	tmp1.dat[5] = in.dat[15];
 	tmp1.dat[4] = in.dat[14];
 	tmp1.dat[3] = in.dat[13];
 	tmp1.dat[2] = in.dat[11];
 	tmp1.dat[1] = in.dat[10];
-	tmp1.dat[0] = in.dat[ 9];
+	tmp1.dat[0] = in.dat[9];
 	tmp1.len = 8;
 	while ((tmp1.len > 0) && (tmp1.dat[tmp1.len - 1] == 0)) tmp1.len--;
 
@@ -264,7 +264,7 @@ int ECC_bn_mod_p256(ECC_BN* c, ECC_BN* a)
 
 	// s6
 	tmp1.dat[7] = in.dat[10];
-	tmp1.dat[6] = in.dat[ 8];
+	tmp1.dat[6] = in.dat[8];
 	tmp1.dat[5] = 0;
 	tmp1.dat[4] = 0;
 	tmp1.dat[3] = 0;
@@ -277,7 +277,7 @@ int ECC_bn_mod_p256(ECC_BN* c, ECC_BN* a)
 
 	// s7
 	tmp1.dat[7] = in.dat[11];
-	tmp1.dat[6] = in.dat[ 9];
+	tmp1.dat[6] = in.dat[9];
 	tmp1.dat[5] = 0;
 	tmp1.dat[4] = 0;
 	tmp1.dat[3] = in.dat[15];
@@ -343,11 +343,11 @@ int ECC_bn_mul(ECC_BN* c, ECC_BN* a, ECC_BN* b)
 		}
 		out.dat[i + j] = (uint32_t)carry;
 	}
-	// ±æÀÌ °áÁ¤
+	//
 	out.len = i + j;
 	if (out.dat[i + j - 1] == 0)
 		out.len -= 1;
-	
+
 	ECC_bn_cpy(c, &out);
 
 	return ECC_PASS;
@@ -378,7 +378,7 @@ int ECC_bn_1bit_rshift(ECC_BN* c, ECC_BN* a)
 }
 
 // c = a^{-1} mod p
-int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
+int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a, ECC_BN* p)
 {
 	ECC_BN u, v, x1, x2;
 
@@ -388,7 +388,7 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
 	}
 
 	ECC_bn_cpy(&u, a);
-	ECC_bn_cpy(&v, &prime_p256);
+	ECC_bn_cpy(&v, p);
 	x1.dat[0] = 1;
 	x1.len = 1;
 	x2.len = 0;
@@ -399,7 +399,7 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
 			ECC_bn_1bit_rshift(&u, &u);
 			if ((x1.dat[0] & 1))
 			{
-				ECC_bn_add(&x1, &prime_p256, &x1);
+				ECC_bn_add(&x1, p, &x1);
 			}
 			ECC_bn_1bit_rshift(&x1, &x1);
 		}
@@ -409,7 +409,7 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
 			ECC_bn_1bit_rshift(&v, &v);
 			if ((x2.dat[0] & 1))
 			{
-				ECC_bn_add(&x2, &prime_p256, &x2);
+				ECC_bn_add(&x2, p, &x2);
 			}
 			ECC_bn_1bit_rshift(&x2, &x2);
 		}
@@ -417,12 +417,12 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
 		if (ECC_bn_cmp(&u, &v) >= 0)
 		{
 			ECC_bn_sub(&u, &u, &v);
-			ECC_bn_sub_mod(&x1, &x1, &x2, &prime_p256);
+			ECC_bn_sub_mod(&x1, &x1, &x2, p);
 		}
 		else
 		{
 			ECC_bn_sub(&v, &v, &u);
-			ECC_bn_sub_mod(&x2, &x2, &x1, &prime_p256);
+			ECC_bn_sub_mod(&x2, &x2, &x1, p);
 		}
 	}
 	if (u.dat[0] == 1 && u.len == 1)
@@ -433,6 +433,132 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a)
 	{
 		ECC_bn_cpy(c, &x2);
 	}
+
+	return ECC_PASS;
+}
+
+int ECC_bn_mul_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
+{
+	ECC_bn_mul(c, a, b);
+	// ECC_bn_mod(c, c, p);
+
+	return ECC_PASS;
+}
+int ECC_bn_mul_mod_p256(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
+{
+	ECC_bn_mul(c, a, b);
+	ECC_bn_mod_p256(c, c);
+
+	return ECC_PASS;
+}
+
+
+
+
+int ECC_pt_init(ECC_PT* P)
+{
+	P->point_at_infinity = 1;
+
+	return ECC_PASS;
+}
+
+int ECC_pt_cpy(ECC_PT* R, ECC_PT* P)
+{
+	ECC_bn_cpy(&R->x, &P->x);
+	ECC_bn_cpy(&R->y, &P->y);
+
+	R->point_at_infinity = P->point_at_infinity;
+
+	return ECC_PASS;
+}
+
+
+// R = P + Q
+int ECC_pt_add(ECC_PT* R, ECC_PT* P, ECC_PT* Q)
+{
+	if (P->point_at_infinity)
+	{
+		ECC_pt_cpy(R, Q);
+		return ECC_PASS;
+	}
+	else if (Q->point_at_infinity)
+	{
+		ECC_pt_cpy(R, P);
+		return ECC_PASS;
+	}
+	else if (ECC_bn_cmp(&P->x, &Q->x) == 0)
+	{
+		if (ECC_bn_cmp(&P->y, &Q->y))
+		{
+			R->point_at_infinity = 1;
+			return ECC_PASS;
+		}
+		else return ECC_pt_dbl(R, P);
+	}
+
+	ECC_PT out;
+	ECC_BN tx, ty, tinvx;
+	out.point_at_infinity = 0;
+
+	ECC_bn_sub_mod(&tx, &Q->x, &P->x, &prime_p256);			// x2-x1
+	ECC_bn_sub_mod(&ty, &Q->y, &P->y, &prime_p256);			// y2-y1
+
+	ECC_bn_binary_inv(&tinvx, &tx, &prime_p256);			// invx
+	ECC_bn_mul_mod_p256(&ty, &ty, &tinvx, &prime_p256);		// ty = ty * invx
+
+	ECC_bn_mul_mod_p256(&tx, &ty, &ty, &prime_p256);		// tx = ty * ty
+	ECC_bn_sub_mod(&tx, &tx, &P->x, &prime_p256);			// tx -= x1
+	ECC_bn_sub_mod(&tx, &tx, &Q->x, &prime_p256);			// tx -= x2
+
+	ECC_bn_cpy(&out.x, &tx);								// R->x = tx
+	
+	ECC_bn_sub_mod(&tx, &P->x, &tx, &prime_p256);			// tx = x1-x3
+	ECC_bn_mul_mod_p256(&ty, &ty, &tx, &prime_p256);		// ty * tx
+	ECC_bn_sub_mod(&ty, &ty, &P->y, &prime_p256);			// ty -= y1
+
+	ECC_bn_cpy(&out.y, &ty);								// R->y = ty
+
+	ECC_pt_cpy(R, &out);
+
+	return ECC_PASS;
+}
+
+
+// R = 2P
+int ECC_pt_dbl(ECC_PT* R, ECC_PT* P)
+{
+	if (P->point_at_infinity)
+	{
+		R->point_at_infinity = 1;
+		return ECC_PASS;
+	}
+	ECC_PT out;
+	out.point_at_infinity = 0;
+	ECC_BN tx, ty, tmp;
+	tmp.dat[0] = 1;
+	tmp.len = 1;
+
+	ECC_bn_mul_mod_p256(&tx, &P->x, &P->x, &prime_p256);	// tx = x1*x1
+	ECC_bn_sub_mod(&tx, &tx, &tmp, &prime_p256);			// tx -= 1
+	ECC_bn_add_mod(&tmp, &tx, &tx, &prime_p256);			// tmp = tx + tx
+	ECC_bn_add_mod(&tx, &tmp, &tx, &prime_p256);			// tx = tmp + tx
+
+	ECC_bn_add_mod(&ty, &P->y, &P->y, &prime_p256);			// ty = y + y
+	ECC_bn_binary_inv(&ty, &ty, &prime_p256);				// ty = 1/y
+	ECC_bn_mul_mod_p256(&ty, &tx, &ty, &prime_p256);		// ty = tx * ty
+	
+	ECC_bn_mul_mod_p256(&tx, &ty, &ty, &prime_p256);		// tx = ty * ty
+	ECC_bn_sub_mod(&tx, &tx, &P->x, &prime_p256);			// tx = tx - x1
+	ECC_bn_sub_mod(&tx, &tx, &P->x, &prime_p256);			// tx = tx - x1
+
+	ECC_bn_cpy(&out.x, &tx);								// R->x = tx
+
+	ECC_bn_sub_mod(&tx, &P->x, &tx, &prime_p256);			// tx = x1 - x3
+	ECC_bn_mul_mod_p256(&ty, &ty, &tx, &prime_p256);		// ty = ty * tx
+	ECC_bn_sub_mod(&ty, &ty, &P->y, &prime_p256);			// ty = ty - y1
+
+	ECC_bn_cpy(&out.y, &ty);								// R->y = ty
+	ECC_pt_cpy(R, &out);
 
 	return ECC_PASS;
 }

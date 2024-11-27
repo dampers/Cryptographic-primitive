@@ -6,7 +6,7 @@
 #include "gmp.h"
 
 #define TEST_SIZE 100000
-
+/*
 void test_add_sub()
 {
 	int i;
@@ -236,7 +236,7 @@ void validtest_binary_inv()
 		mpz_urandomm(a, state, p);
 		mpz_invert(b, a, p);
 		ECC_mpz_to_ecc_bn(&A, a);
-		ECC_bn_binary_inv(&B, &A);
+		ECC_bn_binary_inv(&B, &A, &prime_p256);
 		ECC_mpz_to_ecc_bn(&temp, b);
 
 		if (ECC_bn_cmp(&B, &temp))
@@ -255,14 +255,14 @@ void validtest_binary_inv()
 
  static void performance_test()
 {
-	/*
+	
 	* performance test of 
 	* ECC_bn_add_mod
 	* ECC_bn_sub_mod
 	* ECC_bn_mul
 	* ECC_bn_mod_p256
 	* ECC_bn_binary_inv
-	*/
+	
 
 	clock_t start, end;
 	int i;
@@ -322,7 +322,7 @@ void validtest_binary_inv()
 	start = clock();
 	for (i = 0; i < TEST_SIZE; i++)
 	{
-		ECC_bn_binary_inv(&C, &B);
+		ECC_bn_binary_inv(&C, &B, &prime_p256);
 	}
 	end = clock();
 	printf("ECC bn binary inversion time : %lf\n", ((double)end - start));
@@ -332,15 +332,38 @@ void validtest_binary_inv()
 	mpz_clear(p);
 	gmp_randclear(state);
 }
+ */
+
+void test_addition_and_doubling_EC()
+{
+	ECC_PT R, P, Q;
+	ECC_pt_init(&R);
+	ECC_pt_init(&P);
+	ECC_pt_init(&Q);
+	ECC_pt_cpy(&P, &base_p256);
+
+	ECC_pt_dbl(&R, &P);
+	ECC_pt_cpy(&Q, &P);
+	ECC_bn_sub_mod(&Q.y, &prime_p256, &P.y, &prime_p256);
+	ECC_pt_add(&R, &R, &Q);
+
+	if (ECC_bn_cmp(&R.x, &P.x) == 0 && ECC_bn_cmp(&R.y, &P.y) == 0 && R.point_at_infinity == 0)
+	{
+		printf("ECC add success.\n");
+	}
+	else printf("ECC add fail. \n");
+
+}
 
 int main()
 {
-	test_add_sub();
+	//test_add_sub();
 	/*test_add_sub();
 	test_add_sub_mod();*/
 	//test_mul();
 	//test_mod_p256();
-	validtest_binary_inv();
-	performance_test();
+	//validtest_binary_inv();
+	//performance_test();
+	test_addition_and_doubling_EC();
 	return 0;
 }
