@@ -4,6 +4,7 @@
 
 #include "ecc.h"
 #include "gmp.h"
+#include "KISA_SHA256.h"
 
 #define TEST_SIZE 100000
 /*
@@ -355,6 +356,72 @@ void test_addition_and_doubling_EC()
 
 }
 
+int byte_to_ecc_bn(ECC_BN* a, uint8_t* hm, int hm_len)
+{
+	if (hm_len != 32) return ECC_FAIL;
+	int i;
+	uint32_t tmp;
+	for (i = 7; i >= 0; i--)
+	{
+		tmp = (hm[i * 4] << 24) | (hm[i * 4 + 1] << 16) | (hm[i * 4 + 2] << 8) || (hm[i * 4 + 3]);
+		a->dat[7 - i] = tmp;
+	}
+	i = 7;
+	a->len = 8;
+	while (a->dat[i] == 0) a->len = a->len - 1;
+
+	return ECC_PASS;
+}
+
+void ECDSA_TEST()
+{
+	int i, j, ECC_state;
+	uint32_t tmp;
+	mpz_t mpz_randk, rand_d, p;
+	ECC_BN k, r, s, e, pri_d;
+	ECC_PT Q;
+	uint8_t hm[SHA256_DIGEST_VALUELEN];
+
+	gmp_randstate_t state;
+	gmp_randinit_default(state);
+	mpz_init(mpz_randk);
+	mpz_init(rand_d);
+	mpz_init(p);
+	ECC_ecc_bn_to_mpz(p, &order_p256);
+	mpz_urandomm(mpz_randk, state, p);
+	mpz_urandomm(rand_d, state, p);
+
+	ECC_mpz_to_ecc_bn(&k, mpz_randk);
+	ECC_mpz_to_ecc_bn(&pri_d, rand_d);
+	ECC_pt_smul(&Q, &pri_d, &base_p256);
+	
+	SHA256_Encrpyt(0, 0, hm);
+	byte_to_ecc_bn(&e, hm, SHA256_DIGEST_VALUELEN);
+
+	ECC_state = ECC_ecdsa_sign(&r, &s, &e, &k, &pri_d);
+	if (ECC_state == ECC_FAIL)
+	{
+		printf("fail at sign.\n");
+		return;
+	}
+	ECC_state = ECC_ecdsa_veri(&r, &s, &e, &Q);
+
+	if (ECC_state == ECC_FAIL)
+	{
+		printf("fail at verification.\n");
+		return;
+	}
+
+	printf("ECDSA success.\n");
+	
+
+
+	mpz_clear(mpz_randk);
+	mpz_clear(rand_d);
+	mpz_clear(p);
+	gmp_randclear(state);
+}
+
 int main()
 {
 	//test_add_sub();
@@ -364,6 +431,7 @@ int main()
 	//test_mod_p256();
 	//validtest_binary_inv();
 	//performance_test();
-	test_addition_and_doubling_EC();
+	//test_addition_and_doubling_EC();
+	ECDSA_TEST();
 	return 0;
 }

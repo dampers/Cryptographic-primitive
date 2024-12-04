@@ -437,10 +437,48 @@ int ECC_bn_binary_inv(ECC_BN* c, ECC_BN* a, ECC_BN* p)
 	return ECC_PASS;
 }
 
+
+int ECC_bn_mod(ECC_BN* c, ECC_BN* a, ECC_BN* p)
+{
+	int i;
+	ECC_BN tem, out;
+
+	if (ECC_bn_cmp(a, p) < 0)
+	{
+		ECC_bn_cpy(c, a);
+		return ECC_PASS;
+	}
+
+	tem.len = a->len;
+	ECC_bn_cpy(&out, a);
+
+	for (i = tem.len - 1; i >= (tem.len) - (p->len); i--)
+	{
+		tem.dat[i] = p->dat[i - tem.len + p->len];
+	}
+
+	for (; i >= 0; i--) {
+		tem.dat[i] = 0;
+	}
+
+	while (ECC_bn_cmp(&out, p) >= 0)
+	{
+		while (ECC_bn_cmp(&out, &tem) >= 0)
+		{
+			ECC_bn_sub(&out, &out, &tem);
+		}
+		ECC_bn_1bit_rshift(&tem, &tem);
+	}
+
+	ECC_bn_cpy(c, &out);
+
+	return ECC_PASS;
+}
+
 int ECC_bn_mul_mod(ECC_BN* c, ECC_BN* a, ECC_BN* b, ECC_BN* p)
 {
 	ECC_bn_mul(c, a, b);
-	// ECC_bn_mod(c, c, p);
+	ECC_bn_mod(c, c, p);
 
 	return ECC_PASS;
 }
@@ -562,3 +600,95 @@ int ECC_pt_dbl(ECC_PT* R, ECC_PT* P)
 
 	return ECC_PASS;
 }
+
+int ECC_pt_smul(ECC_PT* R, ECC_BN* k, ECC_PT* P)
+{
+	if (P->point_at_infinity == 1)
+	{
+		R->point_at_infinity = 1;
+		return ECC_PASS;
+	}
+
+	int i, j;
+	ECC_PT out;
+	out.point_at_infinity = 1;
+	
+	for (i = k->len - 1; i >= 0; i--)
+	{
+		for (j = 31; j >= 0; j--)
+		{
+			ECC_pt_dbl(&out, &out);
+			if ((1 << j) & k->dat[i])
+			{
+				ECC_pt_add(&out, &out, P);
+			}
+		}
+	}
+
+	ECC_pt_cpy(R, &out);
+	return ECC_PASS;
+}
+
+
+int ECC_ecdsa_sign(ECC_BN* r, ECC_BN* s, ECC_BN* hm, ECC_BN* k, ECC_BN* pri_d)
+{
+	if ((k->len == 0) || (ECC_bn_cmp(k, &order_p256) >= 0))
+	{
+		return ECC_FAIL;
+	}
+	
+	ECC_PT kP;
+	ECC_BN inv_k;
+	ECC_pt_smul(&kP, k, &base_p256);
+	ECC_bn_mod(r, &kP.x, &order_p256);
+	
+	if (r->len == 0)
+	{
+		return ECC_FAIL;
+	}
+
+	ECC_bn_mul_mod(s, pri_d, r, &order_p256);
+	ECC_bn_add_mod(s, s, hm, &order_p256);
+	ECC_bn_binary_inv(&inv_k, k, &order_p256);
+	ECC_bn_mul_mod(s, s, &inv_k, &order_p256);
+
+	if (s->len == 0)
+	{
+		return ECC_FAIL;
+	}
+
+	return ECC_PASS;
+}
+
+
+int ECC_ecdsa_veri(ECC_BN* r, ECC_BN* s, ECC_BN* hm, ECC_PT* pub_Q)
+{
+	if ((r->len == 0) || (ECC_bn_cmp(r, &order_p256) >= 0) ||
+		(s->len == 0) || (ECC_bn_cmp(s, &order_p256) >= 0))
+	{
+		return ECC_FAIL;
+	}
+
+	ECC_BN w, u1, u2;
+	ECC_PT X, u1P, u2Q;
+	ECC_bn_binary_inv(&w, s, &order_p256);
+	ECC_bn_mul_mod(&u1, hm, &w, &order_p256);
+	ECC_bn_mul_mod(&u2, r, &w, &order_p256);
+	
+	ECC_pt_smul(&u1P, &u1, &base_p256);
+	ECC_pt_smul(&u2Q, &u2, pub_Q);
+	ECC_pt_add(&X, &u1P, &u2Q);
+
+	if (X.point_at_infinity == 1)
+	{
+		return ECC_FAIL;
+	}
+	ECC_bn_mod(&w, &X.x, &order_p256);
+	if (ECC_bn_cmp(&w, r))
+	{
+		return ECC_FAIL;
+	}
+	return ECC_PASS;
+}
+
+

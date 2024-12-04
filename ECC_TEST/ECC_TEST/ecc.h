@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-//#define __GMP_ENABLE
+#define __GMP_ENABLE
 
 #ifdef __GMP_ENABLE
 #include "gmp.h"
@@ -23,7 +23,7 @@ typedef struct _ECC_PT
 {
 	ECC_BN x;
 	ECC_BN y;
-	int point_at_infinity; //1인 경우 무한원점으로 정의
+	int point_at_infinity; // if point_at_infinity is 1, that is infinite point
 }ECC_PT;
 
 
@@ -45,6 +45,10 @@ static ECC_PT base_p256 = {
 };
 
 // order = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
+static ECC_BN order_p256 = {
+	{0xFC632551, 0xF3B9CAC2, 0xA7179E84, 0xBCE6FAAD,
+	 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF}, 8
+};
 
 #ifdef __GMP_ENABLE
 int ECC_ecc_bn_to_mpz(mpz_t c, ECC_BN* a);
@@ -75,3 +79,8 @@ int ECC_pt_cpy(ECC_PT* R, ECC_PT* P);
 int ECC_pt_add(ECC_PT* R, ECC_PT* P, ECC_PT* Q);
 // R = 2P
 int ECC_pt_dbl(ECC_PT* R, ECC_PT* P);
+// R = kP
+int ECC_pt_smul(ECC_PT* R, ECC_BN* k, ECC_PT* P);
+
+int ECC_ecdsa_sign(ECC_BN* r, ECC_BN* s, ECC_BN* hm, ECC_BN* k, ECC_BN* pri_d);
+int ECC_ecdsa_veri(ECC_BN* r, ECC_BN* s, ECC_BN* hm, ECC_PT* pub_Q);
